@@ -1,7 +1,7 @@
 from Tkinter import *
 import tkMessageBox
 from PIL import Image, ImageTk
-import time, os, sys
+import time, os, sys, subprocess
 import StopWatch, Temperature, GasSensors, Thermal
 
 font = "Helvetica"
