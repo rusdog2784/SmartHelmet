@@ -14,7 +14,7 @@ from colour import Color
 asset_dir = '/home/pi/Desktop/SmartHelmet/Assets/Images'
 background_white = (255, 255, 255)
 font_type = 'Helvetica'
-font_size = 24
+font_size = 20
 font_color = (000, 000, 000)
 items = []
 
@@ -37,27 +37,27 @@ rgb = bytearray(camera.resolution[0] * camera.resolution[1] * 3)
 temp_surface = pygame.Surface((160, 52))
 temp_surface.fill(background_white)
 temp_surface.set_alpha(38)
-temp_icon = pygame.image.load(os.path.join(asset_dir, 'temp_icon.gif'))
+temp_icon = pygame.image.load(os.path.join(asset_dir, 'temp_icon.png'))
 items.append({'item':temp_surface, 'x':x+20, 'y':y+20-6})
-items.append({'item':temp_icon, 'x':x+20, 'y':y+20})
+items.append({'item':temp_icon, 'x':x+20+5, 'y':y+20})
 #stopwatch
 timer_surface = pygame.Surface((160, 52))
 timer_surface.fill(background_white)
 timer_surface.set_alpha(38)
-timer_icon = pygame.image.load(os.path.join(asset_dir, 'stopwatch_icon.gif'))
+timer_icon = pygame.image.load(os.path.join(asset_dir, 'stopwatch_icon.png'))
 items.append({'item':timer_surface, 'x':x+1280-160-20, 'y':y+20-6})
-items.append({'item':timer_icon, 'x':x+1280-40-20, 'y':y+20})
+items.append({'item':timer_icon, 'x':x+1280-40-20-5, 'y':y+20})
 #gas
 gas_surface = pygame.Surface((160, 104))
 gas_surface.fill(background_white)
 gas_surface.set_alpha(38)
-gas_icon = pygame.image.load(os.path.join(asset_dir, 'toxic_gas_icon.gif'))
-mq9_static_text = "CO:"
-font = pygame.font.SysFont(font_type, 18)
-mq9_static_text = font.render(mq9_static_text, True, font_color)
+#gas_icon = pygame.image.load(os.path.join(asset_dir, 'toxic_gas_icon.png'))
+mq9_icon = pygame.image.load(os.path.join(asset_dir, 'CO_icon.png'))
+mq4_icon = pygame.image.load(os.path.join(asset_dir, 'CH4_icon.png'))
 items.append({'item':gas_surface, 'x':x+20, 'y':y+720-104-20})
-items.append({'item':gas_icon, 'x':x+20, 'y':y+720-52-20-20})
-items.append({'item':mq9_static_text, 'x':x+20+35, 'y':y+720-104-15})
+#items.append({'item':gas_icon, 'x':x+20, 'y':y+720-52-20-20})
+items.append({'item':mq9_icon, 'x':x+20+5, 'y':y+720-104-20+5})
+items.append({'item':mq4_icon, 'x':x+20+5, 'y':y+720-52-15})
 # End Of Static Widgets --------------------------------------------------------------
 
 
@@ -143,9 +143,9 @@ while(exitFlag):
     #perc = mq.MQPercentage()
     mq9_text = '0.0000 ppm'
     #mq9_text = '%0.4f ppm'% perc['CO']
-    font = pygame.font.SysFont(font_type, 18)
+    font = pygame.font.SysFont(font_type, font_size)
     mq9_text = font.render(mq9_text, True, font_color)
-    screen.blit(mq9_text, (x+160+20-mq9_text.get_rect().width, y+720-104-15))
+    screen.blit(mq9_text, (x+160+20-mq9_text.get_rect().width, y+720-104-5))
 
     # Updating Temperature Sensor Data
     tc = thermocouple.get()
