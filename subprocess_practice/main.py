@@ -1,31 +1,21 @@
+from max31855 import MAX31855, MAX31855Error
+from Adafruit_AMG88xx import Adafruit_AMG88xx
 import picamera
 import pygame
 import io
 import os, sys
+import math
+import time
+import numpy as np
+from scipy.interpolate import griddata
+from colour import Color
 
-directory = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(sys.argv[0])))
 asset_dir = '/home/pi/Desktop/SmartHelmet/Assets/Images'
 background_white = (255, 255, 255)
+font_type = 'Helvetica'
+font_size = 24
+font_color = (000, 000, 000)
 items = []
-items.append({'item':None, 'x':5, 'y':5})
-
-def text_to_screen(screen, text, x, y, size = 24, color = (200, 000, 000), font_type = 'Helvetica'):
-    try:
-        text = str(text)
-        font = pygame.font.SysFont(font_type, size)
-        text = font.render(text, True, color)
-        screen.blit(text, (x, y))
-    except Exception, e:
-        print 'Font Error, saw it coming'
-        raise e
-
-def icon_to_screen(screen, path, x, y):
-    try:
-        img = pygame.image.load(path)
-        screen.blit(img, (x, y))
-    except Exception, e:
-        print 'Error adding icon to screen'
-        #raise e
 
 # Init pygame 
 pygame.init()
@@ -64,29 +54,98 @@ gas_icon = pygame.image.load(os.path.join(asset_dir, 'toxic_gas_icon.gif'))
 items.append({'item':gas_surface, 'x':x+20, 'y':y+720-104-20})
 items.append({'item':gas_icon, 'x':x+20, 'y':y+720-52-20-20})
 
+
+# Temperature Sensor Stuff -----------------------------------------------------------
+
+cs_pin = 18            #15
+clock_pin = 16         #29
+data_pin = 15          #31
+units = "f"
+thermocouple = MAX31855(cs_pin, clock_pin, data_pin, units)
+tc = 0.0
+
+# End Of Temperature Sensor Stuff ----------------------------------------------------
+
+
+# Thermal Camera Stuff ---------------------------------------------------------------
+
+#low range of the sensor (this will be blue on the screen)
+MINTEMP = 26
+#high range of the sensor (this will be red on the screen)
+MAXTEMP = 32
+#how many color values we can have
+COLORDEPTH = 1024
+os.putenv('SDL_FBDEV', '/dev/fb1')
+#initialize the sensor
+sensor = Adafruit_AMG88xx()
+points = [(math.floor(ix / 8), (ix % 8)) for ix in range(0, 64)]
+grid_x, grid_y = np.mgrid[0:7:32j, 0:7:32j]
+#the list of colors we can choose from
+blue = Color("indigo")
+colors = list(blue.range_to(Color("red"), COLORDEPTH))
+#create the array of colors
+colors = [(int(c.red * 255), int(c.green * 255), int(c.blue * 255)) for c in colors]
+displayPixelWidth = 160 / 30
+displayPixelHeight = 160 / 30
+#some utility functions
+def constrain(val, min_val, max_val):
+    return min(max_val, max(min_val, val))
+def map(x, in_min, in_max, out_min, out_max):
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+# End Of Thermal Camera Stuff --------------------------------------------------------
+
+
 # Main loop
+refresh_count = 0
 exitFlag = True
 while(exitFlag):
     for event in pygame.event.get():
         if(event.type is pygame.MOUSEBUTTONDOWN or 
            event.type is pygame.QUIT):
             exitFlag = False
- 
+            thermocouple.cleanup()
+
+    # Live streaming from the pi camera
     stream = io.BytesIO()
     camera.capture(stream, use_video_port=True, format='rgb')
     stream.seek(0)
     stream.readinto(rgb)
     stream.close()
     img = pygame.image.frombuffer(rgb[0:(camera.resolution[0] * camera.resolution[1] * 3)], camera.resolution, 'RGB')
-
     screen.fill(0)
     if img:
-        items[:1] = [{'item':img, 'x':x, 'y':y}]
+        screen.blit(img, (x, y))
+        #items[:1] = [{'item':img, 'x':x, 'y':y}]
 
-    # Blit-ing all items onto display screen
+    # Blit-ing static items onto display screen after live stream so they appear above
     for item in items:
         screen.blit(item['item'], (item['x'], item['y']))
-        
+
+    # Adding Thermal Camera to Screen
+    thermal_surface = pygame.Surface((160, 160))
+    thermal_surface.fill(background_white)
+    pixels = sensor.readPixels()
+    pixels = [map(p, MINTEMP, MAXTEMP, 0, COLORDEPTH - 1) for p in pixels]
+    bicubic = griddata(points, pixels, (grid_x, grid_y), method='cubic')
+    for ix, row in enumerate(bicubic):
+            for jx, pixel in enumerate(row):
+                    pygame.draw.rect(thermal_surface, colors[constrain(int(pixel), 0, COLORDEPTH- 1)], (displayPixelHeight * ix, displayPixelWidth * jx, displayPixelHeight, displayPixelWidth))
+    screen.blit(thermal_surface, (x+1280-160-20, y+720-160-20))
+
+    # Updating Temperature Sensor Data
+    if refresh_count == 3:
+        try:
+            tc = thermocouple.get()
+        except MAX31855Error as e:
+            tc = "Error: " + e.value
+        refresh_count = 0
+    text = str(tc) + " F"
+    font = pygame.font.SysFont(font_type, font_size)
+    text = font.render(text, True, font_color)
+    screen.blit(text, (x+160+20-text.get_rect().width, y+20+5))
+
+    refresh_count += 1
     pygame.display.update()
 
 camera.close()
