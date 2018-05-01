@@ -25,11 +25,6 @@ pygame.display.set_caption('SmartHelmet')
 screen = pygame.display.set_mode((0,0))
 
 
-# Timer Stuff ------------------------------------------------------------------------
-timer = StopWatch()    
-# End Of Timer Stuff -----------------------------------------------------------------
-
-
 # Init camera
 camera = picamera.PiCamera(resolution=(1280,720), framerate=30)
 camera.rotation = 180
@@ -113,6 +108,11 @@ def map(x, in_min, in_max, out_min, out_max):
 # End Of Thermal Camera Stuff --------------------------------------------------------
 
 
+# Timer Stuff ------------------------------------------------------------------------
+timer = StopWatch()    
+# End Of Timer Stuff -----------------------------------------------------------------
+
+
 # Main loop
 exitFlag = True
 while(exitFlag):
@@ -147,13 +147,21 @@ while(exitFlag):
                     pygame.draw.rect(thermal_surface, colors[constrain(int(pixel), 0, COLORDEPTH- 1)], (displayPixelHeight * ix, displayPixelWidth * jx, displayPixelHeight, displayPixelWidth))
     screen.blit(thermal_surface, (x+1280-160-20, y+720-160-20))
 
-    # Updating Gas Sensor Data
+    # Updating MQ9 Data
     #perc = mq.MQPercentage()
     mq9_text = '0.0000 ppm'
     #mq9_text = '%0.4f ppm'% perc['CO']
     font = pygame.font.SysFont(font_type, font_size)
     mq9_text = font.render(mq9_text, True, font_color)
     screen.blit(mq9_text, (x+160+20-mq9_text.get_rect().width, y+720-104-5))
+
+    # Updating MQ4 Data
+    #perc = mq.MQPercentage()
+    mq4_text = '0.0000 ppm'
+    #mq4_text = '%0.4f ppm'% perc['CO']
+    font = pygame.font.SysFont(font_type, font_size)
+    mq4_text = font.render(mq4_text, True, font_color)
+    screen.blit(mq4_text, (x+160+20-mq4_text.get_rect().width, y+720-52-5))
 
     # Updating Temperature Sensor Data
     tc = thermocouple.get()
