@@ -23,14 +23,24 @@ pygame.init()
 pygame.display.set_caption('SmartHelmet')
 screen = pygame.display.set_mode((0,0))
 
+
+# Timer Stuff ------------------------------------------------------------------------
+timer = pygame.time.Clock()
+frame_count = 0
+frame_rate = 60
+# End Of Timer Stuff -----------------------------------------------------------------
+
+
 # Init camera
 camera = picamera.PiCamera(resolution=(1280,720), framerate=30)
 camera.rotation = 180
 x = (screen.get_width() - camera.resolution[0]) / 2
 y = (screen.get_height() - camera.resolution[1]) / 2
 
+
 # Init buffer
 rgb = bytearray(camera.resolution[0] * camera.resolution[1] * 3)
+
 
 # Static Widgets ---------------------------------------------------------------------
 #temperature
@@ -105,7 +115,6 @@ def map(x, in_min, in_max, out_min, out_max):
 
 
 # Main loop
-refresh_count = 0
 exitFlag = True
 while(exitFlag):
     for event in pygame.event.get():
@@ -149,12 +158,22 @@ while(exitFlag):
 
     # Updating Temperature Sensor Data
     tc = thermocouple.get()
-    text = '%0.1f F' % tc
+    temp_text = '%0.1f F' % tc
     font = pygame.font.SysFont(font_type, font_size)
-    text = font.render(text, True, font_color)
-    screen.blit(text, (x+160+20-text.get_rect().width-5, y+20+10))
+    temp_text = font.render(temp_text, True, font_color)
+    screen.blit(temp_text, (x+160+20-temp_text.get_rect().width-5, y+20+10))
 
-    #refresh_count += 1
+    # Updating Timer Data
+    total_seconds = frame_count // frame_rate
+    minutes = total_seconds // 60
+    seconds = total_seconds % 60
+    output_string = "%02d:%02d" % (minutes, seconds)
+    font = pygame.font.SysFont(font_type, font_size)
+    timer_text = font.render(output_string, True, font_color)
+    screen.blit(timer_text, (x+1280-160-20+5, y+20+10))
+    frame_count += 1
+    timer.tick(frame_rate)
+
     pygame.display.update()
 
 thermocouple.cleanup()
