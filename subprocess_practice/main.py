@@ -1,5 +1,6 @@
 from max31855 import MAX31855, MAX31855Error
 from Adafruit_AMG88xx import Adafruit_AMG88xx
+from mq import *
 import picamera
 import pygame
 import io
@@ -31,7 +32,7 @@ y = (screen.get_height() - camera.resolution[1]) / 2
 # Init buffer
 rgb = bytearray(camera.resolution[0] * camera.resolution[1] * 3)
 
-# Static Widgets
+# Static Widgets ---------------------------------------------------------------------
 #temperature
 temp_surface = pygame.Surface((160, 52))
 temp_surface.fill(background_white)
@@ -51,24 +52,32 @@ gas_surface = pygame.Surface((160, 104))
 gas_surface.fill(background_white)
 gas_surface.set_alpha(38)
 gas_icon = pygame.image.load(os.path.join(asset_dir, 'toxic_gas_icon.gif'))
+mq9_static_text = "CO:"
+font = pygame.font.SysFont(font_type, 18)
+mq9_static_text = font.render(mq9_static_text, True, font_color)
 items.append({'item':gas_surface, 'x':x+20, 'y':y+720-104-20})
 items.append({'item':gas_icon, 'x':x+20, 'y':y+720-52-20-20})
+items.append({'item':mq9_static_text, 'x':x+20+35, 'y':y+720-104-15})
+# End Of Static Widgets --------------------------------------------------------------
 
 
 # Temperature Sensor Stuff -----------------------------------------------------------
-
 cs_pin = 18            #15
 clock_pin = 16         #29
 data_pin = 15          #31
 units = "f"
 thermocouple = MAX31855(cs_pin, clock_pin, data_pin, units)
 tc = 0.0
-
 # End Of Temperature Sensor Stuff ----------------------------------------------------
 
 
-# Thermal Camera Stuff ---------------------------------------------------------------
+# MQ9 - CO Gas Sensor Stuff ----------------------------------------------------------
+#mq = MQ()
+#perc = None
+# End of MQ9 - CO Gas Sensor Stuff ---------------------------------------------------
 
+
+# Thermal Camera Stuff ---------------------------------------------------------------
 #low range of the sensor (this will be blue on the screen)
 MINTEMP = 26
 #high range of the sensor (this will be red on the screen)
@@ -92,7 +101,6 @@ def constrain(val, min_val, max_val):
     return min(max_val, max(min_val, val))
 def map(x, in_min, in_max, out_min, out_max):
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-
 # End Of Thermal Camera Stuff --------------------------------------------------------
 
 
@@ -104,7 +112,6 @@ while(exitFlag):
         if(event.type is pygame.MOUSEBUTTONDOWN or 
            event.type is pygame.QUIT):
             exitFlag = False
-            thermocouple.cleanup()
 
     # Live streaming from the pi camera
     stream = io.BytesIO()
@@ -116,7 +123,6 @@ while(exitFlag):
     screen.fill(0)
     if img:
         screen.blit(img, (x, y))
-        #items[:1] = [{'item':img, 'x':x, 'y':y}]
 
     # Blit-ing static items onto display screen after live stream so they appear above
     for item in items:
@@ -133,20 +139,24 @@ while(exitFlag):
                     pygame.draw.rect(thermal_surface, colors[constrain(int(pixel), 0, COLORDEPTH- 1)], (displayPixelHeight * ix, displayPixelWidth * jx, displayPixelHeight, displayPixelWidth))
     screen.blit(thermal_surface, (x+1280-160-20, y+720-160-20))
 
+    # Updating Gas Sensor Data
+    #perc = mq.MQPercentage()
+    mq9_text = '0.0000 ppm'
+    #mq9_text = '%0.4f ppm'% perc['CO']
+    font = pygame.font.SysFont(font_type, 18)
+    mq9_text = font.render(mq9_text, True, font_color)
+    screen.blit(mq9_text, (x+160+20-mq9_text.get_rect().width, y+720-104-15))
+
     # Updating Temperature Sensor Data
-    if refresh_count == 3:
-        try:
-            tc = thermocouple.get()
-        except MAX31855Error as e:
-            tc = "Error: " + e.value
-        refresh_count = 0
-    text = str(tc) + " F"
+    tc = thermocouple.get()
+    text = '%0.1f F' % tc
     font = pygame.font.SysFont(font_type, font_size)
     text = font.render(text, True, font_color)
-    screen.blit(text, (x+160+20-text.get_rect().width, y+20+5))
+    screen.blit(text, (x+160+20-text.get_rect().width-5, y+20+10))
 
-    refresh_count += 1
+    #refresh_count += 1
     pygame.display.update()
 
+thermocouple.cleanup()
 camera.close()
 pygame.display.quit()
