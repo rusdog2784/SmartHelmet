@@ -6,6 +6,8 @@ import os, sys
 directory = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(sys.argv[0])))
 asset_dir = '/home/pi/Desktop/SmartHelmet/Assets/Images'
 background_white = (255, 255, 255)
+items = []
+items.append({'item':None, 'x':5, 'y':5})
 
 def text_to_screen(screen, text, x, y, size = 24, color = (200, 000, 000), font_type = 'Helvetica'):
     try:
@@ -39,6 +41,29 @@ y = (screen.get_height() - camera.resolution[1]) / 2
 # Init buffer
 rgb = bytearray(camera.resolution[0] * camera.resolution[1] * 3)
 
+# Static Widgets
+#temperature
+temp_surface = pygame.Surface((160, 52))
+temp_surface.fill(background_white)
+temp_surface.set_alpha(38)
+temp_icon = pygame.image.load(os.path.join(asset_dir, 'temp_icon.gif'))
+items.append({'item':temp_surface, 'x':x+20, 'y':y+20-6})
+items.append({'item':temp_icon, 'x':x+20, 'y':y+20})
+#stopwatch
+timer_surface = pygame.Surface((160, 52))
+timer_surface.fill(background_white)
+timer_surface.set_alpha(38)
+timer_icon = pygame.image.load(os.path.join(asset_dir, 'stopwatch_icon.gif'))
+items.append({'item':timer_surface, 'x':x+1280-160-20, 'y':y+20-6})
+items.append({'item':timer_icon, 'x':x+1280-40-20, 'y':y+20})
+#gas
+gas_surface = pygame.Surface((160, 104))
+gas_surface.fill(background_white)
+gas_surface.set_alpha(38)
+gas_icon = pygame.image.load(os.path.join(asset_dir, 'toxic_gas_icon.gif'))
+items.append({'item':gas_surface, 'x':x+20, 'y':y+720-104-20})
+items.append({'item':gas_icon, 'x':x+20, 'y':y+720-52-20-20})
+
 # Main loop
 exitFlag = True
 while(exitFlag):
@@ -56,18 +81,12 @@ while(exitFlag):
 
     screen.fill(0)
     if img:
-        screen.blit(img, (x,y))
-    # Adding temperature icon
-    temp_surface = pygame.Surface((140, 52))
-    temp_surface.fill(background_white)
-    temp_surface.set_alpha(38)
-    screen.blit(temp_surface, (x+20, y+20-6))
-    icon_to_screen(screen, os.path.join(asset_dir, 'temp_icon.gif'), x+20, y+20)
-    # Adding stopwatch icon
-    icon_to_screen(screen, os.path.join(asset_dir, 'stopwatch_icon.gif'), x+1280-40-20, y+20)
-    # Adding gas icon
-    icon_to_screen(screen, os.path.join(asset_dir, 'toxic_gas_icon.gif'), x+20, y+720-40-100)
+        items[:1] = [{'item':img, 'x':x, 'y':y}]
 
+    # Blit-ing all items onto display screen
+    for item in items:
+        screen.blit(item['item'], (item['x'], item['y']))
+        
     pygame.display.update()
 
 camera.close()
