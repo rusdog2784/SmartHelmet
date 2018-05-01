@@ -1,2 +1,0 @@
-# SmartHelmet
-Senior Design Repository

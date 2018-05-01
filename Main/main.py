@@ -1,3 +1,4 @@
+from StopWatch import StopWatch
 from max31855 import MAX31855, MAX31855Error
 from Adafruit_AMG88xx import Adafruit_AMG88xx
 from mq import *
@@ -25,9 +26,7 @@ screen = pygame.display.set_mode((0,0))
 
 
 # Timer Stuff ------------------------------------------------------------------------
-timer = pygame.time.Clock()
-frame_count = 0
-frame_rate = 60
+timer = StopWatch()    
 # End Of Timer Stuff -----------------------------------------------------------------
 
 
@@ -164,16 +163,12 @@ while(exitFlag):
     screen.blit(temp_text, (x+160+20-temp_text.get_rect().width-5, y+20+10))
 
     # Updating Timer Data
-    total_seconds = frame_count // frame_rate
-    minutes = total_seconds // 60
-    seconds = total_seconds % 60
-    output_string = "%02d:%02d" % (minutes, seconds)
+    timer._update()
+    timer_text = timer.getTime()
     font = pygame.font.SysFont(font_type, font_size)
-    timer_text = font.render(output_string, True, font_color)
+    timer_text = font.render(timer_text, True, font_color)
     screen.blit(timer_text, (x+1280-160-20+5, y+20+10))
-    frame_count += 1
-    timer.tick(frame_rate)
-
+    
     pygame.display.update()
 
 thermocouple.cleanup()
